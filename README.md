@@ -70,7 +70,7 @@ SQLite is the default (`db.sqlite3`). To switch, no code change is needed:
 DB_ENGINE=postgres
 DB_NAME=hr_portal
 DB_USER=postgres
-DB_PASSWORD=yourpassword
+DB_PASSWORD=********
 DB_HOST=127.0.0.1
 DB_PORT=5432
 ```
