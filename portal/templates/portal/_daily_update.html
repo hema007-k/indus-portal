@@ -1,0 +1,23 @@
+{# Needs: plist (current projects of the employee), next ("dashboard" / "project_list") #}
+{% for p in plist %}
+  <form method="post" action="{% url 'project_update' p.pk %}" class="daily-update">
+    {% csrf_token %}<input type="hidden" name="next" value="{{ next }}">
+    <div class="du-name">
+      <a class="name-link" href="{% url 'project_detail' p.pk %}">{{ p.name }}</a>
+      <span class="pill {% if p.my_mode == 'field' %}pill-orange{% else %}pill-grey{% endif %} ms-1">{{ p.my_mode_display }}</span>
+      <div class="small text-secondary">Project {{ p.completion }}% done{% if p.today_update %} &middot; you reported {{ p.today_update.percent }}% today{% endif %}</div>
+    </div>
+    <div class="du-pct">
+      <label class="small text-secondary" for="pct-{{ p.pk }}-{{ next }}">My work done %</label>
+      <input id="pct-{{ p.pk }}-{{ next }}" class="form-control form-control-sm" type="number" name="percent" min="0" max="100" required
+             value="{% if p.today_update %}{{ p.today_update.percent }}{% else %}{{ p.my_percent }}{% endif %}">
+    </div>
+    <div class="du-note">
+      <label class="small text-secondary" for="note-{{ p.pk }}-{{ next }}">What did you finish today?</label>
+      <input id="note-{{ p.pk }}-{{ next }}" class="form-control form-control-sm" type="text" name="note" maxlength="255" value="{{ p.today_update.note|default:'' }}" placeholder="Short note (optional)">
+    </div>
+    <button class="btn btn-primary btn-sm du-btn">{% if p.today_update %}Update{% else %}Save{% endif %}</button>
+  </form>
+{% empty %}
+  <div class="text-secondary small">No running project assigned to you.</div>
+{% endfor %}

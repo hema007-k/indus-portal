@@ -1,0 +1,93 @@
+{% extends "portal/base.html" %}
+{% block title %}{{ project.name }}{% endblock %}
+{% block content %}
+<div class="toolbar d-flex flex-wrap gap-2 align-items-center mb-3">
+  <a class="btn btn-outline-light" href="{% url 'project_list' %}">&larr; Back</a>
+  <h5 class="page-title mb-0 me-auto ms-2">{{ project.name }}</h5>
+  {% if 'projects' in my_perms %}<a class="btn btn-primary" href="{% url 'project_edit' project.pk %}">Edit Project</a>{% endif %}
+</div>
+<div class="panel mb-3">
+  <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+    <span class="pill {% if project.status == 'inprogress' %}pill-water{% elif project.status == 'completed' %}pill-grey{% else %}pill-orange{% endif %}">{{ project.get_status_display }}</span>
+    <span class="small text-secondary">{{ project.start_date|date:"d-M-Y"|default:"No start date" }} &rarr; {{ project.end_date|date:"d-M-Y"|default:"open" }}</span>
+  </div>
+  <p class="mb-3">{{ project.description|default:"No description." }}</p>
+  <div class="d-flex justify-content-between small"><span>Completion</span><strong>{{ project.completion }}%</strong></div>
+  <div class="progress mb-3"><div class="progress-bar bar-water" style="width: {{ project.completion }}%"></div></div>
+  <div class="tiles">
+    <div class="tile"><div class="tile-num">{{ m.span_days }}</div><div class="tile-lbl">Working days so far</div></div>
+    <div class="tile"><div class="tile-num text-orange">{{ m.leave_days }}</div><div class="tile-lbl">Employee leave days</div></div>
+    <div class="tile"><div class="tile-num text-water">{{ m.man_days }}</div><div class="tile-lbl">Man-days worked</div></div>
+    <div class="tile"><div class="tile-num">{{ m.planned_days|default_if_none:"-" }}</div><div class="tile-lbl">Planned working days</div></div>
+    <div class="tile"><div class="tile-num">{{ m.remaining_days|default_if_none:"-" }}</div><div class="tile-lbl">Working days left</div></div>
+    <div class="tile"><div class="tile-num">{{ m.rows|length }}</div><div class="tile-lbl">Members</div></div>
+  </div>
+</div>
+
+{% if can_update %}
+<div class="panel mb-3">
+  <h6 class="mb-3">My update for today <span class="text-secondary small">- {{ today|date:"d-M-Y" }}</span></h6>
+  <form method="post" action="{% url 'project_update' project.pk %}" class="daily-update">
+    {% csrf_token %}
+    <div class="du-pct">
+      <label class="small text-secondary" for="pct">My work done %</label>
+      <input id="pct" class="form-control form-control-sm" type="number" name="percent" min="0" max="100" required value="{% if my_today %}{{ my_today.percent }}{% elif my_latest %}{{ my_latest.percent }}{% else %}0{% endif %}">
+    </div>
+    <div class="du-note">
+      <label class="small text-secondary" for="note">What did you finish today?</label>
+      <input id="note" class="form-control form-control-sm" type="text" name="note" maxlength="255" value="{{ my_today.note|default:'' }}" placeholder="Short note (optional)">
+    </div>
+    <button class="btn btn-primary btn-sm du-btn">{% if my_today %}Update{% else %}Save{% endif %}</button>
+  </form>
+</div>
+{% endif %}
+
+<div class="panel mb-3">
+  <h6 class="mb-3">Members on this project</h6>
+  <div class="table-responsive">
+    <table class="table fancy-table stack-table align-middle mb-0">
+      <thead><tr><th>Code</th><th>Name</th><th>Work type</th><th>Assigned from</th><th>Working days</th><th>Leave days</th><th>Net days</th><th>Planned net</th><th>Done</th></tr></thead>
+      <tbody>
+      {% for r in m.rows %}
+        <tr>
+          <td data-label="Code"><span class="emp-id">{{ r.employee.employee_id }}</span></td>
+          <td data-label="Name">{% if 'employees' in my_perms %}<a class="name-link" href="{% url 'employee_detail' r.employee.pk %}">{{ r.employee.full_name }}</a>{% else %}{{ r.employee.full_name }}{% endif %}
+            <div class="small text-secondary">{{ r.employee.designation.name|default:"-" }}</div></td>
+          <td data-label="Work type"><span class="pill {% if r.work_mode == 'field' %}pill-orange{% else %}pill-grey{% endif %}">{{ r.work_mode_display }}</span></td>
+          <td data-label="Assigned from">{{ r.start|date:"d-M-Y"|default:"-" }}</td>
+          <td data-label="Working days">{{ r.span_days }}</td>
+          <td data-label="Leave days">{{ r.leave_days }}</td>
+          <td data-label="Net days"><strong>{{ r.net_days }}</strong></td>
+          <td data-label="Planned net">{{ r.planned_net_days|default_if_none:"-" }}</td>
+          <td data-label="Done"><div class="pct-cell"><div class="progress"><div class="progress-bar bar-water" style="width: {{ r.percent }}%"></div></div><span>{{ r.percent }}%</span></div>
+            {% if r.percent_date %}<div class="small text-secondary">{{ r.percent_date|date:"d-M-Y" }}</div>{% endif %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="9" class="text-center text-secondary">No employees assigned.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="panel">
+  <h6 class="mb-3">Daily updates <span class="text-secondary small">(latest 60)</span></h6>
+  <div class="table-responsive history-scroll">
+    <table class="table fancy-table stack-table align-middle mb-0">
+      <thead><tr><th>Date</th><th>Employee</th><th>Done</th><th>Note</th></tr></thead>
+      <tbody>
+      {% for u in updates %}
+        <tr>
+          <td data-label="Date">{{ u.date|date:"d-M-Y" }}</td>
+          <td data-label="Employee"><strong>{{ u.employee.full_name }}</strong> <span class="emp-id">{{ u.employee.employee_id }}</span></td>
+          <td data-label="Done"><span class="pill pill-water">{{ u.percent }}%</span></td>
+          <td data-label="Note">{{ u.note|default:"-" }}</td>
+        </tr>
+      {% empty %}
+        <tr class="empty-row"><td colspan="4" class="text-center text-secondary">No daily update yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

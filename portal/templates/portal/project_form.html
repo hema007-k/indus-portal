@@ -1,0 +1,63 @@
+{% extends "portal/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<h5 class="page-title">{{ title }}</h5>
+<div class="panel">
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="row g-3">
+      <div class="col-md-6"><label class="form-label" for="{{ form.name.id_for_label }}">Project name</label>{{ form.name }}{% for e in form.name.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+      <div class="col-md-6"><label class="form-label" for="{{ form.status.id_for_label }}">Status</label>{{ form.status }}</div>
+      <div class="col-md-6"><label class="form-label" for="{{ form.start_date.id_for_label }}">Start date</label>{{ form.start_date }}{% for e in form.start_date.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+      <div class="col-md-6"><label class="form-label" for="{{ form.end_date.id_for_label }}">End date</label>{{ form.end_date }}{% for e in form.end_date.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+      <div class="col-md-6"><label class="form-label" for="{{ form.completion.id_for_label }}">{{ form.completion.label }}</label>{{ form.completion }}
+        <div class="form-text">Members update their own progress every day; the project % is worked out from that. Change it here only to override.</div>
+        {% for e in form.completion.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+      <div class="col-md-6"><label class="form-label" for="{{ form.description.id_for_label }}">Description</label>{{ form.description }}</div>
+
+      <div class="col-12" data-member-picker>
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+          <label class="form-label mb-0">Members &amp; work type</label>
+          <span class="pill pill-water ms-auto" data-member-count>0 selected</span>
+        </div>
+        <div class="form-text mb-2">Search the employee, tick the member, then choose <strong>Office</strong> or <strong>Field</strong> work. A project cannot be saved without at least one member and a work type for each.</div>
+        {% for e in form.employees.errors %}<div class="text-danger small mb-1">{{ e }}</div>{% endfor %}
+        <div class="member-tools">
+          <input type="search" class="form-control" data-member-search placeholder="Search members by name, code, designation, department or team..." aria-label="Search members" autocomplete="off">
+          <div class="member-buttons">
+            <button type="button" class="btn btn-outline-light btn-sm" data-member-only>Selected only</button>
+            <button type="button" class="btn btn-outline-light btn-sm" data-member-all>Select shown</button>
+            <button type="button" class="btn btn-outline-light btn-sm" data-member-clear>Clear</button>
+          </div>
+        </div>
+        <div class="table-responsive member-scroll">
+          <table class="table fancy-table align-middle mb-0 member-table">
+            <thead><tr><th>Member</th><th class="member-mode-col">Work type</th></tr></thead>
+            <tbody>
+            {% for m in form.members %}
+              <tr data-member-row data-search="{{ m.search }}">
+                <td>
+                  <label class="check-item" for="{{ m.checkbox.id_for_label }}">{{ m.checkbox.tag }}
+                    <span><span class="emp-id">{{ m.employee.employee_id }}</span> {{ m.employee.full_name }}
+                      <span class="d-block small text-secondary">{{ m.employee.designation.name|default:"-" }}{% if m.employee.team %} &middot; {{ m.employee.team.name }}{% endif %}</span></span>
+                  </label>
+                </td>
+                <td>{{ m.mode }}{% for e in m.mode.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="2" class="text-secondary text-center">No active employees.</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+          <div class="text-center text-secondary py-3" data-member-empty hidden>No member matches your search.</div>
+        </div>
+      </div>
+    </div>
+    <div class="mt-4 d-flex gap-2 form-actions">
+      <button class="btn btn-primary" type="submit">Save</button>
+      <a class="btn btn-outline-light" href="{% url back %}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

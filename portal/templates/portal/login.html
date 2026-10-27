@@ -1,0 +1,59 @@
+{% extends "portal/base.html" %}
+{% load static %}
+{% block title %}Login{% endblock %}
+{% block public %}
+<div class="login-wrap">
+  <!-- Sea view background (pure SVG + CSS, no image download needed) -->
+  <div class="sea-scene" aria-hidden="true">
+    <div class="sun"></div>
+    <svg class="cloud c1" viewBox="0 0 200 60"><path d="M20 50 Q5 50 8 38 Q10 26 28 28 Q34 8 58 14 Q74 2 92 16 Q116 8 124 28 Q148 24 150 40 Q156 52 138 50Z"/></svg>
+    <svg class="cloud c2" viewBox="0 0 200 60"><path d="M20 50 Q5 50 8 38 Q10 26 28 28 Q34 8 58 14 Q74 2 92 16 Q116 8 124 28 Q148 24 150 40 Q156 52 138 50Z"/></svg>
+    <svg class="gull g1" viewBox="0 0 40 16"><path d="M2 12 Q10 0 20 10 Q30 0 38 12" /></svg>
+    <svg class="gull g2" viewBox="0 0 40 16"><path d="M2 12 Q10 0 20 10 Q30 0 38 12" /></svg>
+    <div class="sea">
+      <div class="glint"></div>
+      <svg class="boat" viewBox="0 0 60 50"><path class="sail1" d="M30 4 V34 H8Z"/><path class="sail2" d="M33 10 V34 H52Z"/><path class="hull" d="M4 38 H56 L48 47 H12Z"/></svg>
+      <svg class="swave sw1" viewBox="0 0 2880 200" preserveAspectRatio="none"><path d="M0 100 C 240 20, 480 180, 720 100 S 1200 20, 1440 100 S 1920 180, 2160 100 S 2640 20, 2880 100 V200 H0Z"/></svg>
+      <svg class="swave sw2" viewBox="0 0 2880 200" preserveAspectRatio="none"><path d="M0 110 C 240 40, 480 170, 720 110 S 1200 50, 1440 110 S 1920 170, 2160 110 S 2640 50, 2880 110 V200 H0Z"/></svg>
+      <svg class="swave sw3" viewBox="0 0 2880 200" preserveAspectRatio="none"><path d="M0 120 C 240 60, 480 160, 720 120 S 1200 70, 1440 120 S 1920 160, 2160 120 S 2640 70, 2880 120 V200 H0Z"/></svg>
+      <svg class="swave sw4" viewBox="0 0 2880 200" preserveAspectRatio="none"><path d="M0 105 C 240 45, 480 165, 720 105 S 1200 45, 1440 105 S 1920 165, 2160 105 S 2640 45, 2880 105 V200 H0Z"/></svg>
+    </div>
+  </div>
+
+  <div class="card login-card shadow-lg">
+    <div class="card-body p-4">
+      <div class="text-center mb-4">
+        <div class="company-logo big mx-auto mb-2"><img src="{% static 'img/logo.jpg' %}" alt="{{ COMPANY_NAME }}"></div>
+        <h3 class="mb-0 brand-text">{{ COMPANY_SHORT }}</h3>
+        <div class="login-full">{{ COMPANY_NAME }}</div>
+        <span class="pill {% if portal == 'admin' %}pill-orange{% else %}pill-water{% endif %} mt-3">
+          {% if portal == 'admin' %}Admin / HR Login{% else %}Employee Login{% endif %}
+        </span>
+      </div>
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger py-2">{{ form.non_field_errors.0 }}</div>
+      {% endif %}
+      <form method="post" data-clear-cache>
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label" for="id_username">Username</label>
+          <input type="text" name="username" id="id_username" class="form-control" autocomplete="username" autocapitalize="none" autofocus required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="id_password">Password</label>
+          <input type="password" name="password" id="id_password" class="form-control" autocomplete="current-password" required>
+        </div>
+        <input type="hidden" name="next" value="{{ next }}">
+        <button class="btn {% if portal == 'admin' %}btn-orange{% else %}btn-primary{% endif %} w-100" type="submit">Login</button>
+      </form>
+      <div class="text-center small mt-3">
+        {% if portal == 'admin' %}
+          <a href="{% url 'login' %}">Employee? Sign in here</a>
+        {% else %}
+          <a href="{% url 'admin_login' %}">Admin / HR? Sign in here</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

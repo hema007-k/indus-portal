@@ -1,0 +1,21 @@
+{# Needs: plist (projects with my_mode_display / my_percent / my_leave_days / my_net_days), optional empty_text #}
+<div class="table-responsive">
+  <table class="table fancy-table stack-table align-middle mb-0">
+    <thead><tr><th>Project</th><th>Work type</th><th>Completion</th><th>My days</th><th>My leave</th><th>Net days</th></tr></thead>
+    <tbody>
+    {% for p in plist %}
+      <tr>
+        <td data-label="Project"><div><a class="name-link" href="{% url 'project_detail' p.pk %}">{{ p.name }}</a>
+          <div class="small text-secondary">{{ p.start_date|date:"d-M-Y"|default:"-" }} &rarr; {{ p.end_date|date:"d-M-Y"|default:"open" }} &middot; {{ p.employees.all|length }} member(s)</div></div></td>
+        <td data-label="Work type"><span class="pill {% if p.my_mode == 'field' %}pill-orange{% else %}pill-grey{% endif %}">{{ p.my_mode_display }}</span></td>
+        <td data-label="Completion"><div class="pct-cell"><div class="progress"><div class="progress-bar bar-water" style="width: {{ p.completion }}%"></div></div><span>{{ p.completion }}%</span></div></td>
+        <td data-label="My days">{{ p.mine.span_days }}</td>
+        <td data-label="My leave">{{ p.my_leave_days }}</td>
+        <td data-label="Net days"><strong>{{ p.my_net_days }}</strong></td>
+      </tr>
+    {% empty %}
+      <tr class="empty-row"><td colspan="6" class="text-center text-secondary">{{ empty_text|default:"No projects assigned." }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>

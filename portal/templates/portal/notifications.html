@@ -1,0 +1,45 @@
+{% extends "portal/base.html" %}
+{% block title %}Notifications{% endblock %}
+{% block content %}
+<h5 class="page-title">Notifications</h5>
+
+{% if outbox %}
+<div class="panel mb-3">
+  <h6 class="mb-1">WhatsApp messages to send</h6>
+  <p class="small text-secondary">{% if cloud %}These could not be sent automatically - send them with the button.{% else %}Tap <strong>Open WhatsApp</strong>, the message is already typed - just press send. Then tap <strong>Done</strong>.{% endif %}</p>
+  <div class="table-responsive">
+    <table class="table fancy-table stack-table align-middle mb-0">
+      <thead><tr><th>To</th><th>Message</th><th class="text-end">Action</th></tr></thead>
+      <tbody>
+      {% for n in outbox %}
+        <tr>
+          <td data-label="To"><strong>{{ n.recipient.full_name }}</strong><div class="small text-secondary">{{ n.recipient.phone|default:"no number" }}</div></td>
+          <td data-label="Message">{{ n.message }}<div class="small text-secondary">{{ n.created_at|date:"d-M-Y h:i A" }}</div></td>
+          <td data-label="Action" class="text-end text-nowrap">
+            {% if n.link %}
+              <a class="btn btn-primary btn-sm" href="{{ n.link }}" target="_blank" rel="noopener">Open WhatsApp</a>
+              <form method="post" action="{% url 'notification_sent' n.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-outline-light btn-sm">Done</button></form>
+            {% else %}
+              <span class="pill pill-grey">Add phone number in employee profile</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<div class="panel">
+  <h6 class="mb-3">My notifications</h6>
+  {% for n in mine %}
+    <div class="project-row">
+      <div>{{ n.message }}<div class="small text-secondary">{{ n.created_at|date:"d-M-Y h:i A" }}</div></div>
+      <span class="pill pill-water">{{ n.kind|title }}</span>
+    </div>
+  {% empty %}
+    <div class="text-secondary small">No notifications.</div>
+  {% endfor %}
+</div>
+{% endblock %}

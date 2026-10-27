@@ -1,0 +1,112 @@
+{% extends "portal/base.html" %}
+{% block title %}{{ emp.full_name }}{% endblock %}
+{% block content %}
+<div class="toolbar toolbar-detail d-flex flex-wrap gap-2 align-items-center mb-3">
+  {% if not is_self or back != "dashboard" %}<a class="btn btn-outline-light" href="{% url back %}">&larr; Back</a>{% endif %}
+  <h5 class="page-title mb-0 me-auto ms-2">{% if is_self %}My Profile{% else %}Employee Details{% endif %}</h5>
+  {% if not is_self and 'employees' in my_perms %}<a class="btn btn-primary" href="{% url 'employee_edit' emp.pk %}">Edit Employee</a>{% endif %}
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="panel h-100">
+      <div class="d-flex align-items-center gap-3 mb-3">
+        <div class="avatar big-avatar">{{ emp.full_name|slice:":1"|upper }}</div>
+        <div>
+          <h4 class="mb-0">{{ emp.full_name }} <span class="emp-id emp-id-lg">{{ emp.employee_id }}</span></h4>
+          <div class="text-secondary">{{ emp.designation.name|default:"No designation" }}</div>
+          <span class="pill {% if emp.status == 'active' %}pill-water{% else %}pill-grey{% endif %}">{{ emp.get_status_display }}</span>
+        </div>
+      </div>
+      <h6 class="section-h">Personal Information</h6>
+      <div class="row g-3 info-grid">
+        <div class="col-sm-6 col-md-4"><div class="k">Employee Code</div><div>{{ emp.employee_id }}</div></div>
+        <div class="col-sm-6 col-md-4"><div class="k">Designation</div><div>{{ emp.designation.name|default:"-" }}</div></div>
+        <div class="col-sm-6 col-md-4"><div class="k">Department</div><div>{{ emp.department.name|default:"-" }}</div></div>
+        <div class="col-sm-6 col-md-4"><div class="k">Team</div><div>{{ emp.team.name|default:"-" }}</div></div>
+        <div class="col-sm-6 col-md-4"><div class="k">Joining Date</div><div>{{ emp.joining_date|date:"d-M-Y"|default:"-" }}</div></div>
+        <div class="col-sm-6 col-md-4"><div class="k">Username</div><div>{{ emp.user.username }}</div></div>
+        <div class="col-sm-6 col-md-4"><div class="k">Email</div><div>{{ emp.user.email|default:"-" }}</div></div>
+        <div class="col-sm-6 col-md-4"><div class="k">WhatsApp / Phone</div><div>{{ emp.phone|default:"-" }}</div></div>
+      </div>
+      <h6 class="section-h mt-4">Designation Details</h6>
+      {% if emp.designation %}
+        <p class="mb-2">{{ emp.designation.description|default:"No description added." }}</p>
+        <div class="d-flex flex-wrap gap-2">
+          {% if emp.role == 'admin' or emp.role == 'hr' or emp.designation.can_manage_employees %}<span class="pill pill-water">Manage employees</span>{% endif %}
+          {% if emp.role == 'admin' or emp.role == 'hr' or emp.designation.can_manage_projects %}<span class="pill pill-water">Manage projects</span>{% endif %}
+          {% if emp.role == 'admin' or emp.role == 'hr' or emp.designation.can_manage_leave %}<span class="pill pill-water">Manage leave</span>{% endif %}
+          {% if emp.role == 'admin' or emp.role == 'hr' or emp.designation.can_manage_attendance %}<span class="pill pill-water">Manage attendance</span>{% endif %}
+          {% if emp.role == 'employee' and not emp.designation.can_manage_employees and not emp.designation.can_manage_projects and not emp.designation.can_manage_leave and not emp.designation.can_manage_attendance %}
+            <span class="pill pill-grey">Own details, projects, attendance and leave only</span>
+          {% endif %}
+        </div>
+      {% else %}
+        <div class="text-secondary">No designation assigned.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="panel h-100">
+      <div class="d-flex gap-3 mb-2">
+        <span class="status-dot {% if not record %}dot-absent{% endif %}"><i></i> Absent</span>
+        <span class="status-dot {% if record %}dot-present{% endif %}"><i></i> Present</span>
+      </div>
+      <div class="text-secondary small text-uppercase mb-1">Today</div>
+      <div class="mb-3">
+        In: {% if record.in_time %}<span class="time-pill in">{{ record.in_time|time:"h:i A" }}</span>{% else %}<span class="text-secondary">--</span>{% endif %}
+        &nbsp; Out: {% if record.out_time %}<span class="time-pill out">{{ record.out_time|time:"h:i A" }}</span>{% else %}<span class="text-secondary">--</span>{% endif %}
+        {% if record %}<span class="pill {% if record.work_mode == 'field' %}pill-orange{% else %}pill-grey{% endif %} ms-1">{{ record.get_work_mode_display }}</span>{% endif %}
+      </div>
+      <div class="text-secondary small text-uppercase mb-1">Leave credit {{ leave_balance.year }}</div>
+      <div class="row text-center">
+        <div class="col"><div class="stat text-water">{{ leave_balance.totals.balance|floatformat:"-1" }}</div><div class="small text-secondary">CL balance</div></div>
+        <div class="col"><div class="stat">{{ leave_balance.totals.used|floatformat:"-1" }}</div><div class="small text-secondary">CL used</div></div>
+        <div class="col"><div class="stat text-orange">{{ leave_balance.totals.lop_used|floatformat:"-1" }}</div><div class="small text-secondary">LOP</div></div>
+      </div>
+      <div class="text-secondary small text-uppercase mt-3 mb-1">Project days (net of leave)</div>
+      <div class="row text-center">
+        <div class="col"><div class="stat">{{ project_office_days }}</div><div class="small text-secondary">Office work</div></div>
+        <div class="col"><div class="stat text-orange">{{ project_field_days }}</div><div class="small text-secondary">Field work</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="panel">
+      <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <h6 class="mb-0 me-auto">Attendance &amp; Working Days <span class="text-secondary small">- {{ period.label }}</span></h6>
+        {% include "portal/_period_filter.html" %}
+      </div>
+      {% include "portal/_attendance_section.html" %}
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="panel h-100">
+      <h6 class="mb-3">Leave Credit Details <span class="text-secondary small">- {{ leave_balance.year }}</span></h6>
+      {% include "portal/_leave_balance.html" %}
+      <h6 class="mt-4 mb-2">Leave in {{ period.label }}</h6>
+      {% for l in leaves %}
+        <div class="project-row">
+          <div><strong>{{ l.leave_type.name }}</strong>
+            <div class="small text-secondary">{{ l.start_date|date:"d-M" }} - {{ l.end_date|date:"d-M-Y" }} &middot; {{ l.days|floatformat:"-1" }} day(s)</div></div>
+          <span class="pill {% if l.status == 'approved' %}pill-water{% elif l.status == 'pending' %}pill-orange{% else %}pill-red{% endif %}">{{ l.get_status_display }}</span>
+        </div>
+      {% empty %}
+        <div class="text-secondary small">No leave in this period.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="panel h-100">
+      <h6 class="mb-3">Current Projects <span class="text-secondary small">({{ projects_current|length }})</span></h6>
+      {% include "portal/_my_projects.html" with plist=projects_current empty_text="No project running now." %}
+      <h6 class="mt-4 mb-3">Completed Projects <span class="text-secondary small">({{ projects_completed|length }})</span></h6>
+      {% include "portal/_my_projects.html" with plist=projects_completed empty_text="No completed projects yet." %}
+    </div>
+  </div>
+</div>
+{% endblock %}

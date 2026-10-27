@@ -1,0 +1,62 @@
+{% extends "portal/base.html" %}
+{% block title %}Attendance{% endblock %}
+{% block content %}
+<div class="toolbar d-flex flex-wrap gap-2 align-items-center mb-3">
+  <h5 class="page-title mb-0 me-auto">Attendance <span class="text-secondary fs-6">- {{ period.label }}</span></h5>
+  <form class="search-form d-flex gap-2" method="get" data-turbo-action="replace">
+    <input type="hidden" name="period" value="{{ period.mode }}"><input type="hidden" name="month" value="{{ period.month_value }}"><input type="hidden" name="year" value="{{ period.year }}">
+    <input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Search employee..." aria-label="Search attendance" data-live-filter="att-summary att-records" autocomplete="off">
+    <button class="btn btn-outline-light" type="submit">Search</button>
+  </form>
+  <a class="btn btn-primary" href="{% url 'attendance_create' %}">+ Add Attendance</a>
+</div>
+
+<div class="panel mb-3">{% include "portal/_period_filter.html" %}</div>
+
+<div class="panel mb-3">
+  <h6 class="mb-3">Working days summary (calculated from attendance + leave)</h6>
+  <div class="table-responsive">
+    <table id="att-summary" class="table fancy-table phone-table align-middle mb-0">
+      <thead><tr><th>Employee</th><th class="text-center">Working</th><th class="text-center">Leave</th><th class="text-center">Net</th><th class="text-center">Present</th><th class="text-center">Office</th><th class="text-center">Field</th><th class="text-center">Absent</th><th class="text-center">%</th></tr></thead>
+      <tbody>
+      {% for r in summary_rows %}
+        <tr>
+          <td><span class="emp-id">{{ r.employee.employee_id }}</span> <a class="name-link" href="{% url 'employee_detail' r.employee.pk %}?period={{ period.mode }}&month={{ period.month_value }}&year={{ period.year }}">{{ r.employee.full_name }}</a></td>
+          <td class="text-center">{{ r.working_days }}</td><td class="text-center">{{ r.leave }}</td><td class="text-center">{{ r.net_working_days }}</td>
+          <td class="text-center">{{ r.present }}</td><td class="text-center">{{ r.office }}</td><td class="text-center">{{ r.field }}</td>
+          <td class="text-center">{{ r.absent }}</td><td class="text-center"><span class="pill pill-water">{{ r.percent }}%</span></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="9" class="text-center text-secondary">No employees.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="panel">
+  <h6 class="mb-3">Records <span class="text-secondary small">(latest 150 in this period)</span></h6>
+  <div class="table-responsive">
+    <table id="att-records" class="table fancy-table stack-table align-middle mb-0">
+      <thead><tr><th>Date</th><th>Employee</th><th>In</th><th>Out</th><th>Worked at</th><th class="text-end">Actions</th></tr></thead>
+      <tbody>
+      {% for a in records %}
+        <tr>
+          <td data-label="Date">{{ a.date|date:"d-M-Y (D)" }}</td>
+          <td data-label="Employee"><div><strong>{{ a.employee.full_name }}</strong> <span class="emp-id">{{ a.employee.employee_id }}</span></div></td>
+          <td data-label="In">{% if a.in_time %}<span class="time-pill in">{{ a.in_time|time:"h:i A" }}</span>{% else %}--{% endif %}</td>
+          <td data-label="Out">{% if a.out_time %}<span class="time-pill out">{{ a.out_time|time:"h:i A" }}</span>{% else %}--{% endif %}</td>
+          <td data-label="Worked at"><span class="pill {% if a.work_mode == 'field' %}pill-orange{% else %}pill-grey{% endif %}">{{ a.get_work_mode_display }}</span></td>
+          <td data-label="Actions" class="text-end text-nowrap">
+            <a class="icon-btn edit" href="{% url 'attendance_edit' a.pk %}" title="Edit" aria-label="Edit"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></a>
+            <a class="icon-btn del" href="{% url 'attendance_delete' a.pk %}" title="Delete" aria-label="Delete"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg></a>
+          </td>
+        </tr>
+      {% empty %}
+        <tr class="empty-row"><td colspan="6" class="text-center text-secondary">No attendance records in {{ period.label }}.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

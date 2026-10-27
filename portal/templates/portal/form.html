@@ -1,0 +1,40 @@
+{% extends "portal/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<h5 class="page-title">{{ title }}</h5>
+{% if leave_balance %}
+<div class="panel mb-3">
+  <h6 class="mb-2">Leave credit <span class="text-secondary small">- {{ leave_balance.year }}</span></h6>
+  {% include "portal/_leave_balance.html" %}
+  {% if leave_note %}<p class="small text-secondary mt-2 mb-0">{{ leave_note }}</p>{% endif %}
+</div>
+{% endif %}
+<div class="panel">
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="row g-3">
+      {% for field in form %}
+        <div class="{% if field.field.widget.input_type == 'checkbox' and field.field.widget.allow_multiple_selected %}col-12{% else %}col-md-6{% endif %}">
+          <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {% if field.field.widget.input_type == 'checkbox' and field.field.widget.allow_multiple_selected %}
+            <div class="check-grid">
+              {% for opt in field %}
+                <label class="check-item" for="{{ opt.id_for_label }}">{{ opt.tag }} <span>{{ opt.choice_label }}</span></label>
+              {% endfor %}
+            </div>
+          {% else %}
+            {{ field }}
+          {% endif %}
+          {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+          {% for err in field.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+    <div class="mt-4 d-flex gap-2 form-actions">
+      <button class="btn btn-primary" type="submit">Save</button>
+      <a class="btn btn-outline-light" href="{% url back %}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

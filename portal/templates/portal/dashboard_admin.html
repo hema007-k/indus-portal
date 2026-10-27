@@ -1,0 +1,149 @@
+{% extends "portal/base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<h5 class="page-title">{{ my_title|default:my_role }} Dashboard <span class="text-secondary fs-6">&middot; {{ today|date:"l, d-M-Y" }}</span></h5>
+
+<div class="panel mb-3 d-flex flex-wrap gap-2 align-items-center">
+  {% if holiday_today %}<span class="pill pill-orange">Today is a holiday: {{ holiday_today }}</span>{% else %}<span class="small text-secondary">Today is a working day.</span>{% endif %}
+  {% if is_manager %}
+    {% if today_company_holiday %}
+      <form method="post" action="{% url 'holiday_today' %}" class="ms-auto">{% csrf_token %}<input type="hidden" name="action" value="cancel"><button class="btn btn-outline-danger btn-sm">Cancel today's company holiday</button></form>
+    {% else %}
+      <form method="post" action="{% url 'holiday_today' %}" class="ms-auto d-flex gap-2">{% csrf_token %}
+        <input class="form-control form-control-sm" name="name" placeholder="Reason (optional)" maxlength="120" aria-label="Holiday reason">
+        <button class="btn btn-orange btn-sm text-nowrap">Today company holiday</button>
+      </form>
+    {% endif %}
+  {% endif %}
+</div>
+
+<div class="tiles tiles-lg mb-3">
+  <div class="tile tile-accent"><div class="tile-num">{{ active_count }}</div><div class="tile-lbl">Active employees</div></div>
+  <div class="tile"><div class="tile-num text-water">{{ present_today }}</div><div class="tile-lbl">Present today</div></div>
+  <div class="tile"><div class="tile-num text-orange">{{ on_leave_today }}</div><div class="tile-lbl">On leave today</div></div>
+  <div class="tile"><div class="tile-num {% if pending_count %}text-danger{% endif %}">{{ pending_count }}</div><div class="tile-lbl">Pending leave</div></div>
+  <div class="tile"><div class="tile-num">{{ projects_in_progress }}</div><div class="tile-lbl">Projects running</div></div>
+  <div class="tile"><div class="tile-num">{{ team_count }}</div><div class="tile-lbl">Teams</div></div>
+</div>
+
+<div class="row g-3">
+  <div class="col-12">
+    <div class="panel">
+      <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <h6 class="mb-0 me-auto">Attendance of everyone <span class="text-secondary small">- {{ period.label }}</span></h6>
+        {% include "portal/_period_filter.html" %}
+      </div>
+      <div class="tiles">
+        <div class="tile"><div class="tile-num text-water">{{ totals.present }}</div><div class="tile-lbl">Present days</div></div>
+        <div class="tile"><div class="tile-num">{{ totals.office }}</div><div class="tile-lbl">Office days</div></div>
+        <div class="tile"><div class="tile-num">{{ totals.field }}</div><div class="tile-lbl">Field days</div></div>
+        <div class="tile"><div class="tile-num text-orange">{{ totals.leave }}</div><div class="tile-lbl">Leave days</div></div>
+        <div class="tile"><div class="tile-num text-danger">{{ totals.absent }}</div><div class="tile-lbl">Absent days</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-8">
+    <div class="panel h-100">
+      <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <h6 class="mb-0 me-auto">Employees today</h6>
+        {% if 'employees' in my_perms %}<a class="btn btn-outline-light btn-sm" href="{% url 'employee_list' %}">All employees</a>{% endif %}
+      </div>
+      <div class="table-responsive">
+        <table class="table fancy-table phone-table align-middle mb-0">
+          <thead><tr><th>Code</th><th>Name</th><th>Dept</th><th>In</th><th>Out</th><th>Worked at</th><th>Today</th></tr></thead>
+          <tbody>
+          {% for e in employees %}
+            <tr>
+              <td><span class="emp-id">{{ e.employee_id }}</span></td>
+              <td><div class="name-cell"><span class="mini-avatar">{{ e.full_name|slice:":1"|upper }}</span>
+                <div><a class="name-link" href="{% url 'employee_detail' e.pk %}?from=home">{{ e.full_name }}</a>
+                <div class="small text-secondary">{{ e.designation.name|default:"-" }}</div></div></div></td>
+              <td>{{ e.department.name|default:"-" }}</td>
+              <td>{% if e.today.in_time %}<span class="time-pill in">{{ e.today.in_time|time:"h:i A" }}</span>{% else %}<span class="text-secondary">--</span>{% endif %}</td>
+              <td>{% if e.today.out_time %}<span class="time-pill out">{{ e.today.out_time|time:"h:i A" }}</span>{% else %}<span class="text-secondary">--</span>{% endif %}</td>
+              <td>{% if e.today %}<span class="pill {% if e.today.work_mode == 'field' %}pill-orange{% else %}pill-grey{% endif %}">{{ e.today.get_work_mode_display }}</span>{% else %}<span class="text-secondary">--</span>{% endif %}</td>
+              <td>{% if e.status != 'active' %}<span class="pill pill-grey">Inactive</span>
+                  {% elif e.today %}<span class="pill pill-water">Present</span>
+                  {% elif e.on_leave %}<span class="pill pill-orange">On leave</span>
+                  {% else %}<span class="pill pill-red">Not in</span>{% endif %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7" class="text-center text-secondary">No employees yet.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-4">
+    <div class="panel mb-3">
+      <h6 class="mb-3">Pending leave requests</h6>
+      {% for l in pending_leaves %}
+        <div class="project-row">
+          <div><strong>{{ l.employee.full_name }}</strong>
+            <div class="small text-secondary">{{ l.leave_type.name }} &middot; {{ l.start_date|date:"d-M" }} - {{ l.end_date|date:"d-M" }} ({{ l.days|floatformat:"-1" }}d)</div></div>
+          {% if 'leave' in my_perms %}
+          <div class="d-flex gap-1">
+            <form method="post" action="{% url 'leave_decide' l.pk %}">{% csrf_token %}<input type="hidden" name="action" value="approve"><input type="hidden" name="next" value="dashboard"><button class="btn btn-primary btn-sm">Approve</button></form>
+            <form method="post" action="{% url 'leave_decide' l.pk %}">{% csrf_token %}<input type="hidden" name="action" value="reject"><input type="hidden" name="next" value="dashboard"><button class="btn btn-outline-danger btn-sm">Decline</button></form>
+          </div>
+          {% endif %}
+        </div>
+      {% empty %}
+        <div class="text-secondary small">No pending requests.</div>
+      {% endfor %}
+    </div>
+    <div class="panel">
+      <h6 class="mb-3">Project progress</h6>
+      {% for p in project_list %}
+        <div class="mb-3">
+          <div class="d-flex justify-content-between small"><a class="name-link" href="{% url 'project_detail' p.pk %}">{{ p.name }}</a><strong>{{ p.completion }}%</strong></div>
+          <div class="progress mt-1"><div class="progress-bar bar-water" style="width: {{ p.completion }}%"></div></div>
+          <div class="small text-secondary mt-1">{{ p.employees.count }} employee(s)</div>
+        </div>
+      {% empty %}
+        <div class="text-secondary small">No projects in progress.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="panel">
+      <h6 class="mb-3">Today's project updates <span class="text-secondary small">- {{ today|date:"d-M-Y" }}</span></h6>
+      <div class="table-responsive">
+        <table class="table fancy-table stack-table align-middle mb-0">
+          <thead><tr><th>Employee</th><th>Project</th><th>Completed</th><th>Note</th></tr></thead>
+          <tbody>
+          {% for u in today_updates %}
+            <tr>
+              <td data-label="Employee"><strong>{{ u.employee.full_name }}</strong> <span class="emp-id">{{ u.employee.employee_id }}</span></td>
+              <td data-label="Project"><a class="name-link" href="{% url 'project_detail' u.project.pk %}">{{ u.project.name }}</a></td>
+              <td data-label="Completed"><div class="pct-cell"><div class="progress"><div class="progress-bar bar-water" style="width: {{ u.percent }}%"></div></div><span>{{ u.percent }}%</span></div></td>
+              <td data-label="Note">{{ u.note|default:"-" }}</td>
+            </tr>
+          {% empty %}
+            <tr class="empty-row"><td colspan="4" class="text-center text-secondary">No project update from employees yet today.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="panel quick-actions d-flex flex-wrap gap-2 align-items-center">
+      <h6 class="mb-0 me-auto">Quick Actions</h6>
+      {% if 'employees' in my_perms %}
+        <a class="btn btn-primary" href="{% url 'employee_create' %}">Add Employee</a>
+        <a class="btn btn-orange" href="{% url 'department_create' %}">Add Department</a>
+        <a class="btn btn-orange" href="{% url 'team_create' %}">Add Team</a>
+      {% endif %}
+      {% if 'projects' in my_perms %}<a class="btn btn-primary" href="{% url 'project_create' %}">Add Project</a>{% endif %}
+      {% if 'leave' in my_perms %}<a class="btn btn-outline-light" href="{% url 'leave_create' %}">Add Leave</a>{% endif %}
+      {% if 'attendance' in my_perms %}<a class="btn btn-outline-light" href="{% url 'attendance_create' %}">Add Attendance</a>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

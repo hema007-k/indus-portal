@@ -1,0 +1,21 @@
+{# Monthly / Yearly (and optionally "All time") date filter. Needs: period. Optional: with_all=True, q, status #}
+<form method="get" class="period-filter" data-period-form data-turbo-action="replace">
+  {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+  {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+  <div class="btn-group btn-group-sm" role="group" aria-label="Period">
+    {% if with_all %}
+      <input type="radio" class="btn-check" name="period" id="pf-all" value="all" autocomplete="off" {% if period.sel == "all" %}checked{% endif %}>
+      <label class="btn btn-outline-light" for="pf-all">All</label>
+    {% endif %}
+    <input type="radio" class="btn-check" name="period" id="pf-month" value="month" autocomplete="off" {% if period.sel == "month" %}checked{% endif %}>
+    <label class="btn btn-outline-light" for="pf-month">Monthly</label>
+    <input type="radio" class="btn-check" name="period" id="pf-year" value="year" autocomplete="off" {% if period.sel == "year" %}checked{% endif %}>
+    <label class="btn btn-outline-light" for="pf-year">Yearly</label>
+  </div>
+  <input type="month" name="month" value="{{ period.month_value }}" class="form-control form-control-sm" data-show="month" aria-label="Month">
+  <select name="year" class="form-select form-select-sm" data-show="year" aria-label="Year">
+    {% for y in period.years %}<option value="{{ y }}" {% if y == period.year %}selected{% endif %}>{{ y }}</option>{% endfor %}
+  </select>
+  <button class="btn btn-primary btn-sm" type="submit">Apply</button>
+  {% if period.sel != "all" %}<span class="period-label">{{ period.label }}</span>{% endif %}
+</form>

@@ -1,0 +1,24 @@
+{# Needs: leave_balance (from services.leave_balances) #}
+<div class="table-responsive">
+  <table class="table fancy-table phone-table align-middle mb-0">
+    <thead><tr><th>Leave type</th><th class="text-center">Credit</th><th class="text-center">Used</th><th class="text-center">Pending</th><th class="text-center">Balance</th></tr></thead>
+    <tbody>
+    {% for r in leave_balance.rows %}
+      <tr>
+        <td><strong>{{ r.type.name }}</strong>{% if r.type.monthly_credit and not r.unlimited %}<div class="small text-secondary">{{ r.type.monthly_credit|floatformat:"-1" }} day(s) every month</div>{% endif %}</td>
+        {% if r.unlimited %}
+          <td class="text-center text-secondary">No limit</td><td class="text-center">{{ r.used|floatformat:"-1" }}</td>
+          <td class="text-center">{{ r.pending|floatformat:"-1" }}</td><td class="text-center text-secondary">-</td>
+        {% else %}
+          <td class="text-center">{{ r.credit|floatformat:"-1" }}</td><td class="text-center">{{ r.used|floatformat:"-1" }}</td>
+          <td class="text-center">{{ r.pending|floatformat:"-1" }}</td>
+          <td class="text-center"><span class="pill {% if r.balance > 0 %}pill-water{% else %}pill-red{% endif %}">{{ r.balance|floatformat:"-1" }}</span></td>
+        {% endif %}
+      </tr>
+    {% empty %}
+      <tr><td colspan="5" class="text-center text-secondary">No leave types set up.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="small text-secondary mt-2 mb-0">Casual Leave credit grows by 1.5 days every month. When it is finished, apply as Loss of Pay (LOP).</p>

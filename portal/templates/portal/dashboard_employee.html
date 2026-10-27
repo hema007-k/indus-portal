@@ -1,0 +1,94 @@
+{% extends "portal/base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<h5 class="page-title">My Dashboard <span class="text-secondary fs-6">&middot; {{ today|date:"l, d-M-Y" }}</span></h5>
+{% if holiday_today %}<div class="alert alert-info py-2">Today is a holiday: <strong>{{ holiday_today }}</strong>.</div>{% endif %}
+
+{% if not employee %}
+  <div class="alert alert-warning">No employee profile is linked to this account. Please contact HR.</div>
+{% else %}
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="panel hero h-100">
+      <div class="d-flex align-items-center gap-3">
+        <div class="avatar big-avatar">{{ employee.full_name|slice:":1"|upper }}</div>
+        <div class="min-w-0">
+          <h4 class="mb-0">{{ employee.full_name }} <span class="emp-id emp-id-lg">{{ employee.employee_id }}</span></h4>
+          <div class="text-secondary">{{ employee.designation.name|default:"No designation" }}</div>
+          <div class="mt-1">
+            <span class="pill pill-water">{{ employee.department.name|default:"No department" }}</span>
+            {% if employee.team %}<span class="pill pill-orange ms-1">{{ employee.team.name }}</span>{% endif %}</div>
+        </div>
+      </div>
+      {% if employee.department.description %}<p class="text-secondary small mt-3 mb-0">{{ employee.department.description }}</p>{% endif %}
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="panel h-100">
+      <div class="d-flex gap-3 mb-2">
+        <span class="status-dot {% if not record %}dot-absent{% endif %}"><i></i> Absent</span>
+        <span class="status-dot {% if record %}dot-present{% endif %}"><i></i> Present</span>
+        {% if record %}<span class="pill {% if record.work_mode == 'field' %}pill-orange{% else %}pill-grey{% endif %} ms-auto">{{ record.get_work_mode_display }}</span>{% endif %}
+      </div>
+      <div class="small text-secondary mb-2">
+        In: <strong>{{ record.in_time|time:"h:i A"|default:"--" }}</strong> &nbsp;
+        Out: <strong>{{ record.out_time|time:"h:i A"|default:"--" }}</strong>
+      </div>
+      <div class="d-flex gap-2">
+        <form method="post" action="{% url 'clock_in' %}" class="flex-fill d-flex gap-2">{% csrf_token %}
+          <select name="work_mode" class="form-select form-select-sm w-auto" aria-label="Worked at" {% if record %}disabled{% endif %}>
+            <option value="office">Office</option><option value="field">Field</option>
+          </select>
+          <button class="btn btn-primary flex-fill" {% if record %}disabled{% endif %}>In Time</button>
+        </form>
+        <form method="post" action="{% url 'clock_out' %}">{% csrf_token %}
+          <button class="btn btn-orange" {% if not record or record.out_time %}disabled{% endif %}>Out Time</button>
+        </form>
+      </div>
+      <div class="small text-secondary mt-2" id="live-clock" data-live-clock></div>
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="panel">
+      <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <h6 class="mb-0 me-auto">Attendance &amp; Working Days <span class="text-secondary small">- {{ period.label }}</span></h6>
+        {% include "portal/_period_filter.html" %}
+      </div>
+      {% include "portal/_attendance_section.html" %}
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="panel">
+      <div class="d-flex align-items-center mb-3">
+        <h6 class="mb-0 me-auto">Today's project update <span class="text-secondary small">- {{ today|date:"d-M-Y" }}</span></h6>
+        <a class="btn btn-outline-light btn-sm" href="{% url 'project_list' %}">All projects</a>
+      </div>
+      {% include "portal/_daily_update.html" with plist=projects_current next="dashboard" %}
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="panel h-100">
+      <div class="d-flex align-items-center mb-3">
+        <h6 class="mb-0 me-auto">Leave Credit <span class="text-secondary small">- {{ leave_balance.year }}</span></h6>
+        <a class="btn btn-orange btn-sm" href="{% url 'leave_create' %}">Apply Leave</a>
+      </div>
+      {% include "portal/_leave_balance.html" %}
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="panel h-100">
+      <div class="d-flex align-items-center mb-3">
+        <h6 class="mb-0 me-auto">Current Projects <span class="text-secondary small">({{ projects_current|length }})</span></h6>
+        <span class="small text-secondary">Office {{ project_office_days }} d &middot; Field {{ project_field_days }} d</span>
+      </div>
+      {% include "portal/_my_projects.html" with plist=projects_current empty_text="No project running now." %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

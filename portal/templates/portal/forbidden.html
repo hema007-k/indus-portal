@@ -1,0 +1,9 @@
+{% extends "portal/base.html" %}
+{% block title %}Access denied{% endblock %}
+{% block content %}
+<div class="panel text-center py-5">
+  <h3>Access denied</h3>
+  <p class="text-secondary">Your role / designation does not have permission to open this page.</p>
+  <a class="btn btn-primary" href="{% url 'dashboard' %}">Back to Home</a>
+</div>
+{% endblock %}

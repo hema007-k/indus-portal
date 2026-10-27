@@ -1,0 +1,14 @@
+{% extends "portal/base.html" %}
+{% block title %}Confirm delete{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:560px">
+  <h5>Delete {{ what }}?</h5>
+  <p>Are you sure you want to delete <strong>{{ object }}</strong>? This cannot be undone.</p>
+  {% if warning %}<div class="alert alert-warning py-2 small">{{ warning }}</div>{% endif %}
+  <form method="post" class="d-flex gap-2 form-actions">
+    {% csrf_token %}
+    <button class="btn btn-danger" type="submit">Yes, delete</button>
+    <a class="btn btn-outline-light" href="{% url back %}">Cancel</a>
+  </form>
+</div>
+{% endblock %}
